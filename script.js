@@ -1,3 +1,4 @@
+console.log("JS LOADED");
 let products = JSON.parse(localStorage.getItem("products")) || [];
 let logo = localStorage.getItem("logo") || "";
 let currentCat = "همه";
