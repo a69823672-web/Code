@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>کافه پرواز</title>
+
+<style>
+body{
+  margin:0;
+  font-family:sans-serif;
+  direction:rtl;
+  background:#f4f4f4;
+}
+
+header{
+  background:#111;
+  color:#fff;
+  text-align:center;
+  padding:20px;
+}
+
+header img{
+  width:70px;
+  height:70px;
+  border-radius:50%;
+  object-fit:cover;
+  margin-bottom:10px;
+}
+
+.cats{
+  display:flex;
+  overflow-x:auto;
+  background:#fff;
+  padding:10px;
+  gap:10px;
+}
+
+.cat{
+  flex:none;
+  padding:8px 12px;
+  background:#eee;
+  border-radius:20px;
+  cursor:pointer;
+}
+
+.cat.active{
+  background:#111;
+  color:#fff;
+}
+
+.container{
+  padding:15px;
+}
+
+.item{
+  background:#fff;
+  padding:10px;
+  margin:10px 0;
+  border-radius:10px;
+}
+
+.item img,.item video{
+  width:100%;
+  border-radius:10px;
+  margin-top:10px;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+
+.actions button{
+  flex:1;
+  padding:8px;
+  border:none;
+  cursor:pointer;
+}
+
+.edit{background:#f0ad4e;color:#fff;}
+.del{background:#d9534f;color:#fff;}
+
+.adminBtn{
+  position:fixed;
+  bottom:20px;
+  left:20px;
+  background:#000;
+  color:#fff;
+  padding:10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.panel{
+  display:none;
+  position:fixed;
+  top:0;
+  right:0;
+  width:100%;
+  height:100%;
+  background:#fff;
+  padding:20px;
+  overflow:auto;
+}
+
+input,select{
+  width:100%;
+  padding:10px;
+  margin:5px 0;
+}
+
+button{
+  width:100%;
+  padding:10px;
+  background:#111;
+  color:#fff;
+  border:none;
+  margin-top:10px;
+}
+</style>
+
+</head>
+
+<body>
+
+<header>
+  <img id="logoPreview">
+  <h1>☕ کافه پرواز - شرکت هوانوردی عقاب آسمان شمال</h1>
+  <p>منوی آنلاین</p>
+</header>
+
+<!-- categories -->
+<div class="cats" id="cats"></div>
+
+<div class="container" id="menu"></div>
+
+<div class="adminBtn" onclick="openAdmin()">پنل مدیریت</div>
+
+<div class="panel" id="panel">
+
+<h2>پنل مدیریت</h2>
+
+<input id="pass" type="password" placeholder="رمز ورود">
+<button onclick="checkPass()">ورود</button>
+
+<div id="adminArea" style="display:none">
+
+<h3>لوگو کافه</h3>
+<input type="file" accept="image/*" onchange="setLogo(event)">
+
+<hr>
+
+<h3>افزودن / ویرایش محصول</h3>
+
+<input id="name" placeholder="نام محصول">
+<input id="price" placeholder="قیمت">
+<input id="img" type="file" accept="image/*">
+<input id="video" type="file" accept="video/*">
+
+<select id="category">
+<option>نوشیدنی گرم بر پایه قهوه</option>
+<option>نوشیدنی سرد بر پایه قهوه</option>
+<option>نوشیدنی شرکتی</option>
+<option>تنقلات</option>
+<option>سایر</option>
+<option>غذای حاضری</option>
+<option>نوشیدنی گرم</option>
+</select>
+
+<button onclick="addOrUpdate()">ثبت</button>
+
+</div>
+</div>
+
+<script>
+let products = JSON.parse(localStorage.getItem("products")) || [];
+let logo = localStorage.getItem("logo") || "";
+let currentCat="همه";
+let editIndex = null;
+
+const cats=["همه",
+"نوشیدنی گرم بر پایه قهوه",
+"نوشیدنی سرد بر پایه قهوه",
+"نوشیدنی شرکتی",
+"تنقلات",
+"سایر",
+"غذای حاضری",
+"نوشیدنی گرم"];
+
+function setLogo(e){
+  const file=e.target.files[0];
+  const reader=new FileReader();
+  reader.onload=()=>{
+    logo=reader.result;
+    localStorage.setItem("logo",logo);
+    document.getElementById("logoPreview").src=logo;
+  }
+  reader.readAsDataURL(file);
+}
+
+function renderCats(){
+  const c=document.getElementById("cats");
+  c.innerHTML="";
+  cats.forEach(cat=>{
+    const d=document.createElement("div");
+    d.className="cat"+(cat==currentCat?" active":"");
+    d.innerText=cat;
+    d.onclick=()=>{currentCat=cat;render();renderCats();}
+    c.appendChild(d);
+  });
+}
+
+function render(){
+  const menu=document.getElementById("menu");
+  menu.innerHTML="";
+
+  products
+  .filter(p=>currentCat=="همه"||p.category==currentCat)
+  .forEach((p,i)=>{
+
+    menu.innerHTML+=`
+    <div class="item">
+      <b>${p.name}</b> - ${p.price} تومان
+      ${p.img?`<img src="${p.img}">`:""}
+      ${p.video?`<video controls src="${p.video}"></video>`:""}
+
+      <div class="actions">
+        <button class="edit" onclick="editProduct(${i})">ویرایش</button>
+        <button class="del" onclick="deleteProduct(${i})">حذف</button>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById("logoPreview").src = logo;
+}
+
+function openAdmin(){
+  document.getElementById("panel").style.display="block";
+}
+
+function checkPass(){
+  if(pass.value=="4030"){
+    adminArea.style.display="block";
+  }else alert("رمز اشتباه");
+}
+
+function toBase64(file){
+  return new Promise(res=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result);
+    r.readAsDataURL(file);
+  });
+}
+
+async function addOrUpdate(){
+
+  let imgFile=img.files[0];
+  let videoFile=video.files[0];
+
+  let product={
+    name:name.value,
+    price:price.value,
+    category:category.value,
+    img:"",
+    video:""
+  };
+
+  if(imgFile) product.img = await toBase64(imgFile);
+  if(videoFile) product.video = await toBase64(videoFile);
+
+  if(editIndex!==null){
+    products[editIndex]=product;
+    editIndex=null;
+  }else{
+    products.push(product);
+  }
+
+  localStorage.setItem("products",JSON.stringify(products));
+
+  name.value="";
+  price.value="";
+  img.value="";
+  video.value="";
+
+  render();
+}
+
+function deleteProduct(i){
+  products.splice(i,1);
+  localStorage.setItem("products",JSON.stringify(products));
+  render();
+}
+
+async function editProduct(i){
+  const p=products[i];
+
+  name.value=p.name;
+  price.value=p.price;
+  category.value=p.category;
+
+  editIndex=i;
+}
+
+document.getElementById("logoPreview").src=logo;
+
+renderCats();
+render();
+</script>
+
+</body>
+</html>
